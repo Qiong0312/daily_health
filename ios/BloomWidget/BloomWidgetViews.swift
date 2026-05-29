@@ -329,7 +329,7 @@ struct SupplementGridView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? 3 : 6) {
-            Text("Supplements")
+            Text("Checklist")
                 .font(.system(size: compact ? 10 : 11, weight: .heavy))
                 .foregroundStyle(BloomWidgetTheme.rose800)
 

@@ -232,6 +232,71 @@ class Supplement {
       };
 }
 
+/// Per-item checklist stats for the summary screen (e.g. Iron 5 of 7 days).
+class ChecklistItemStats {
+  const ChecklistItemStats({
+    required this.id,
+    required this.name,
+    required this.daysCompleted,
+    required this.daysInWindow,
+  });
+
+  final String id;
+  final String name;
+  final int daysCompleted;
+  final int daysInWindow;
+
+  double get completionRatio =>
+      daysInWindow <= 0 ? 0 : daysCompleted / daysInWindow;
+
+  static List<ChecklistItemStats> computeBreakdown({
+    required List<Supplement> supplements,
+    required List<SupplementLog> logs,
+    int days = 7,
+    DateTime? now,
+  }) {
+    final enabled = supplements.where((s) => s.enabled).toList();
+    if (enabled.isEmpty || days <= 0) return const [];
+
+    final today = now ?? DateTime.now();
+    final dateKeys = List.generate(
+      days,
+      (i) => _dateKeyFor(today.subtract(Duration(days: i))),
+    );
+
+    bool taken(String id, SupplementSlot slot, String date) => logs.any(
+          (l) => l.date == date && l.supplementId == id && l.slot == slot,
+        );
+
+    final stats = [
+      for (final s in enabled)
+        ChecklistItemStats(
+          id: s.id,
+          name: s.name,
+          daysCompleted: dateKeys
+              .where(
+                (date) => s.slots.every((slot) => taken(s.id, slot, date)),
+              )
+              .length,
+          daysInWindow: days,
+        ),
+    ];
+    stats.sort((a, b) {
+      final byDays = b.daysCompleted.compareTo(a.daysCompleted);
+      if (byDays != 0) return byDays;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return stats;
+  }
+
+  static String _dateKeyFor(DateTime d) {
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+}
+
 class SupplementLog {
   const SupplementLog({
     required this.date,

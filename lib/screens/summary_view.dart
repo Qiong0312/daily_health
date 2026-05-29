@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../copy/checklist_copy.dart';
 import '../models/health_models.dart';
 import '../providers/health_provider.dart';
 import '../theme/app_theme.dart';
@@ -13,7 +14,7 @@ class SummaryView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<HealthProvider>();
-    final adherence = provider.getSupplementAdherence();
+    final checklistStats = provider.getChecklistBreakdown();
     final events = provider.sortedPeriodEvents;
     final avgCycle = provider.data.averageCycleLength;
     final bowelLogsThisWeek = _bowelLogCountLastDays(provider, 7);
@@ -35,13 +36,38 @@ class SummaryView extends StatelessWidget {
                 color: AppColors.lavender500,
               ),
               const SizedBox(height: 16),
-              _StatRow(
-                icon: '💊',
-                label: 'Supplement adherence',
-                value: '${(adherence * 100).round()}%',
-                progress: adherence,
+              const Text(
+                ChecklistCopy.summaryChecklistTitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.rose800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                ChecklistCopy.summaryChecklistSubtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.muted.withValues(alpha: 0.9),
+                ),
               ),
               const SizedBox(height: 12),
+              if (checklistStats.isEmpty)
+                Text(
+                  ChecklistCopy.summaryChecklistEmpty,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.muted.withValues(alpha: 0.9),
+                  ),
+                )
+              else
+                ...checklistStats.expand((item) sync* {
+                  yield _ChecklistStatRow(item: item);
+                  yield const SizedBox(height: 10);
+                }),
+              const SizedBox(height: 2),
               _StatRow(
                 iconLabel: '7d',
                 label: 'Bowel log entries (last 7 days)',
@@ -203,6 +229,25 @@ class SummaryView extends StatelessWidget {
       for (final opt in poopShapeOptions)
         (option: opt, count: counts[opt.value] ?? 0),
     ];
+  }
+}
+
+class _ChecklistStatRow extends StatelessWidget {
+  const _ChecklistStatRow({required this.item});
+
+  final ChecklistItemStats item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StatRow(
+      icon: '✓',
+      label: item.name,
+      value: ChecklistCopy.summaryDaysValue(
+        item.daysCompleted,
+        item.daysInWindow,
+      ),
+      progress: item.completionRatio,
+    );
   }
 }
 

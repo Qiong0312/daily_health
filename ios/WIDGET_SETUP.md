@@ -21,7 +21,7 @@ In Xcode:
 |------|----------|
 | **Small** | Period status (or predicted next start) + Start / End today |
 | **Medium** | Period + Bristol 1–7 row |
-| **Large** | Period + Bristol + today’s supplement doses (tap to check off) |
+| **Large** | Period + Bristol + today’s checklist (tap to check off) |
 
 Edits from the widget are saved to the App Group and merged when you open the app.
 

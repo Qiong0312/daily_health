@@ -371,24 +371,21 @@ class HealthProvider extends ChangeNotifier {
   }
 
   double getSupplementAdherence({int days = 7}) {
-    final enabled = enabledSupplements;
-    if (enabled.isEmpty) return 0;
+    final breakdown = getChecklistBreakdown(days: days);
+    if (breakdown.isEmpty) return 0;
+    final sum = breakdown.fold<double>(
+      0,
+      (total, item) => total + item.completionRatio,
+    );
+    return sum / breakdown.length;
+  }
 
-    var total = 0;
-    var taken = 0;
-    final today = DateTime.now();
-
-    for (var i = 0; i < days; i++) {
-      final date = formatDateKey(today.subtract(Duration(days: i)));
-      for (final s in enabled) {
-        for (final slot in s.slots) {
-          total++;
-          if (isSupplementTaken(s.id, slot, date)) taken++;
-        }
-      }
-    }
-
-    return total == 0 ? 0 : taken / total;
+  List<ChecklistItemStats> getChecklistBreakdown({int days = 7}) {
+    return ChecklistItemStats.computeBreakdown(
+      supplements: _data.supplements,
+      logs: _data.supplementLogs,
+      days: days,
+    );
   }
 
   List<PeriodEvent> get sortedPeriodEvents {

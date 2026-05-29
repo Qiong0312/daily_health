@@ -42,7 +42,7 @@ struct AddBristolLogIntent: AppIntent {
 }
 
 struct ToggleSupplementIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle supplement"
+    static var title: LocalizedStringResource = "Toggle checklist item"
 
     /// Index into [WidgetSnapshot.supplementDosesSorted] (integers encode reliably from widget buttons).
     @Parameter(title: "Dose")

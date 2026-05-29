@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/health_models.dart';
 import '../providers/health_provider.dart';
+import '../copy/checklist_copy.dart';
 import '../theme/app_theme.dart';
 
 class SettingsView extends StatelessWidget {
@@ -55,8 +56,8 @@ class SettingsView extends StatelessWidget {
                 children: [
                   const Expanded(
                     child: SectionLabel(
-                      title: 'Supplements',
-                      subtitle: 'Manage your stack',
+                      title: ChecklistCopy.settingsTitle,
+                      subtitle: ChecklistCopy.settingsSubtitle,
                       color: AppColors.lavender500,
                     ),
                   ),
@@ -74,7 +75,7 @@ class SettingsView extends StatelessWidget {
               const SizedBox(height: 8),
               if (provider.data.supplements.isEmpty)
                 const Text(
-                  'No supplements yet. Tap Add to create one.',
+                  ChecklistCopy.emptySettings,
                   style: TextStyle(fontSize: 13, color: AppColors.muted),
                 )
               else
@@ -273,7 +274,9 @@ class _SupplementDialogState extends State<_SupplementDialog> {
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        widget.initial == null ? 'Add supplement' : 'Edit supplement',
+        widget.initial == null
+            ? ChecklistCopy.addDialogTitle
+            : ChecklistCopy.editDialogTitle,
         style: const TextStyle(
           fontWeight: FontWeight.w800,
           color: AppColors.rose800,
@@ -287,7 +290,7 @@ class _SupplementDialogState extends State<_SupplementDialog> {
             TextField(
               controller: _nameCtrl,
               decoration: InputDecoration(
-                labelText: 'Name',
+                labelText: ChecklistCopy.nameLabel,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -299,7 +302,7 @@ class _SupplementDialogState extends State<_SupplementDialog> {
             TextField(
               controller: _doseCtrl,
               decoration: InputDecoration(
-                labelText: 'Dose (optional)',
+                labelText: ChecklistCopy.notesLabel,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -309,7 +312,7 @@ class _SupplementDialogState extends State<_SupplementDialog> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Time slots',
+              ChecklistCopy.timeOfDayLabel,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,

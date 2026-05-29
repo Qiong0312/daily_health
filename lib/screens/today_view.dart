@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/health_models.dart';
 import '../providers/health_provider.dart';
+import '../copy/checklist_copy.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_utils.dart';
 import '../widgets/common.dart';
@@ -526,14 +527,14 @@ class _SupplementCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SectionLabel(
-            title: 'Supplements',
-            subtitle: 'Check off today\'s doses',
+            title: ChecklistCopy.sectionTitle,
+            subtitle: ChecklistCopy.sectionSubtitleToday,
             color: AppColors.lavender500,
           ),
           const SizedBox(height: 12),
           if (supplements.isEmpty)
             Text(
-              'Add supplements in Settings to track them here.',
+              ChecklistCopy.emptyToday,
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.muted.withValues(alpha: 0.85),

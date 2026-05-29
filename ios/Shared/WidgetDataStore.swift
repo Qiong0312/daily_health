@@ -525,7 +525,7 @@ extension WidgetSnapshot {
     }
 
     func supplementName(for dose: WidgetSnapshotSupplementDose) -> String {
-        supplements.first { $0.id == dose.supplementId }?.name ?? "Supplement"
+        supplements.first { $0.id == dose.supplementId }?.name ?? "Item"
     }
 
     func slotLabel(_ slot: String) -> String {

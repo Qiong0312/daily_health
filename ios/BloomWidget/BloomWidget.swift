@@ -16,7 +16,7 @@ struct BloomWidget: Widget {
             BloomWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Bloom")
-        .description("Period, Bristol log, and today's supplements.")
+        .description("Period, Bristol log, and today's checklist.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
