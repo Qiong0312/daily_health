@@ -104,13 +104,18 @@ struct BloomMediumView: View {
 struct BloomLargeView: View {
     let snapshot: WidgetSnapshot
 
+    /// ≤3 items: one column (up to 3 rows). >3 items: two columns (up to 3 rows).
+    private var checklistColumns: Int {
+        snapshot.supplementDosesSorted.count <= 3 ? 1 : 2
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             PeriodWeekCalendarView(snapshot: snapshot, compact: false)
             BristolRowView(snapshot: snapshot, compact: false)
             SupplementGridView(
                 snapshot: snapshot,
-                columns: 2,
+                columns: checklistColumns,
                 maxRows: 3,
                 compact: false
             )
