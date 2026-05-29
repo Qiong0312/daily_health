@@ -34,7 +34,7 @@ class _BloomAppState extends State<BloomApp> {
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('🌸', style: TextStyle(fontSize: 48)),
+                    BloomMark(size: 48),
                     SizedBox(height: 12),
                     Text(
                       'Bloom',
@@ -65,7 +65,7 @@ class _BloomAppState extends State<BloomApp> {
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
                       child: Row(
                         children: [
-                          const Text('🌸', style: TextStyle(fontSize: 26)),
+                          const BloomMark(size: 26),
                           const SizedBox(width: 8),
                           const Text(
                             'Bloom',

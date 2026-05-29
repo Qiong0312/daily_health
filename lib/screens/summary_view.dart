@@ -5,6 +5,7 @@ import '../models/health_models.dart';
 import '../providers/health_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/date_utils.dart';
+import '../widgets/common.dart';
 
 class SummaryView extends StatelessWidget {
   const SummaryView({super.key});
@@ -64,7 +65,7 @@ class SummaryView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _StatRow(
-                icon: '🌸',
+                useBloomMark: true,
                 label: 'Expected cycle length',
                 value: '$avgCycle days',
               ),
@@ -209,13 +210,15 @@ class _StatRow extends StatelessWidget {
   const _StatRow({
     this.icon,
     this.iconLabel,
+    this.useBloomMark = false,
     required this.label,
     required this.value,
     this.progress,
-  }) : assert(icon != null || iconLabel != null);
+  }) : assert(icon != null || iconLabel != null || useBloomMark);
 
   final String? icon;
   final String? iconLabel;
+  final bool useBloomMark;
   final String label;
   final String value;
   final double? progress;
@@ -227,7 +230,9 @@ class _StatRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            if (icon != null)
+            if (useBloomMark)
+              const BloomMark(size: 20)
+            else if (icon != null)
               Text(icon!, style: const TextStyle(fontSize: 20))
             else
               Container(

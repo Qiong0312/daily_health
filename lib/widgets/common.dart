@@ -3,6 +3,24 @@ import 'package:flutter/material.dart';
 import '../models/health_models.dart';
 import '../theme/app_theme.dart';
 
+/// Blossom mark shared with the app icon (assets/icons/bloom_mark.png).
+class BloomMark extends StatelessWidget {
+  const BloomMark({super.key, required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/icons/bloom_mark.png',
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
+
 class BottomNav extends StatelessWidget {
   const BottomNav({
     super.key,

@@ -1,3 +1,6 @@
+# Icon generator venv
+tooling/.venv/
+
 # Miscellaneous
 *.class
 *.log
