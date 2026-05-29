@@ -10,6 +10,14 @@ private enum BloomWidgetTheme {
     static let rose100 = Color(red: 0.99, green: 0.91, blue: 0.96)
 }
 
+/// Large widget: week-day, Bristol, and supplement rows share the same cell height.
+private enum BloomWidgetMetrics {
+    static let largeCellMinHeight: CGFloat = 40
+    static let largeCellVPadding: CGFloat = 6
+    static let largeCellCornerRadius: CGFloat = 6
+    static let largeBodyFontSize: CGFloat = 13
+}
+
 struct BloomWidgetEntryView: View {
     @Environment(\.widgetFamily) var family
     let entry: BloomWidgetEntry
@@ -213,13 +221,14 @@ private struct WeekDayCellContent: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, compact ? 3 : 6)
+        .padding(.vertical, compact ? 3 : BloomWidgetMetrics.largeCellVPadding)
+        .frame(minHeight: compact ? nil : BloomWidgetMetrics.largeCellMinHeight)
         .background(cellBackground)
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
+            RoundedRectangle(cornerRadius: compact ? 6 : BloomWidgetMetrics.largeCellCornerRadius)
                 .stroke(cellBorder, lineWidth: day.isToday ? 2 : 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .clipShape(RoundedRectangle(cornerRadius: compact ? 6 : BloomWidgetMetrics.largeCellCornerRadius))
     }
 
     private var cellBackground: Color {
@@ -279,19 +288,20 @@ struct BristolTypeButton: View {
     var body: some View {
         Button(intent: AddBristolLogIntent(typeNumber: typeNumber)) {
             Text("\(typeNumber)")
-                .font(.system(size: compact ? 11 : 14, weight: .heavy))
+                .font(.system(size: compact ? 11 : BloomWidgetMetrics.largeBodyFontSize, weight: .heavy))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, compact ? 6 : 8)
+                .padding(.vertical, compact ? 6 : BloomWidgetMetrics.largeCellVPadding)
+                .frame(minHeight: compact ? nil : BloomWidgetMetrics.largeCellMinHeight)
                 .background(isSelected ? BloomWidgetTheme.rose500 : Color.white.opacity(0.9))
                 .foregroundStyle(isSelected ? Color.white : BloomWidgetTheme.rose800)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: compact ? 6 : BloomWidgetMetrics.largeCellCornerRadius)
                         .stroke(
                             isSelected ? BloomWidgetTheme.rose700 : BloomWidgetTheme.rose300.opacity(0.6),
                             lineWidth: isSelected ? 2 : 1
                         )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: compact ? 6 : BloomWidgetMetrics.largeCellCornerRadius))
         }
         .buttonStyle(.plain)
     }
@@ -368,34 +378,35 @@ struct SupplementDoseCell: View {
 
     var body: some View {
         Button(intent: ToggleSupplementIntent(doseIndex: doseIndex)) {
-            HStack(spacing: compact ? 4 : 8) {
+            HStack(spacing: compact ? 4 : 6) {
                 Image(systemName: dose.taken ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: compact ? 13 : 18))
+                    .font(.system(size: compact ? 13 : BloomWidgetMetrics.largeBodyFontSize))
                     .foregroundStyle(
                         dose.taken ? BloomWidgetTheme.rose600 : BloomWidgetTheme.rose300
                     )
                 Text(snapshot.supplementName(for: dose))
-                    .font(.system(size: compact ? 10 : 13, weight: .semibold))
+                    .font(.system(size: compact ? 10 : BloomWidgetMetrics.largeBodyFontSize, weight: .semibold))
                     .foregroundStyle(BloomWidgetTheme.rose800)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, compact ? 8 : 12)
-            .padding(.vertical, compact ? 6 : 9)
+            .padding(.horizontal, compact ? 8 : 10)
+            .padding(.vertical, compact ? 6 : BloomWidgetMetrics.largeCellVPadding)
+            .frame(minHeight: compact ? nil : BloomWidgetMetrics.largeCellMinHeight)
             .background(
                 dose.taken
                     ? BloomWidgetTheme.rose100
                     : Color.white.opacity(0.85)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: compact ? 8 : BloomWidgetMetrics.largeCellCornerRadius)
                     .stroke(
                         dose.taken ? BloomWidgetTheme.rose500 : BloomWidgetTheme.rose100,
                         lineWidth: 1.5
                     )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: compact ? 8 : BloomWidgetMetrics.largeCellCornerRadius))
         }
         .buttonStyle(.plain)
     }
