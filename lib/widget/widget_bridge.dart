@@ -45,6 +45,8 @@ class WidgetBridge {
       final snapshot = WidgetSnapshot.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
       );
+      // Widget display normalizes stale days in Swift, but the file may still
+      // hold yesterday + needsAppSync — never merge that into the app.
       if (snapshot.dateKey != todayKey()) return data;
       if (!snapshot.needsAppSync) return data;
 

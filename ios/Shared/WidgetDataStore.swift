@@ -167,15 +167,16 @@ enum WidgetDataStore {
         return copy
     }
 
+    /// Persist a stale-day reset so the app never imports yesterday on launch.
     static func clearStaleSnapshotIfNeeded() {
         guard let snapshot = load(), snapshot.dateKey != todayDateKey() else { return }
         var fresh = snapshot
-        let pendingSync = snapshot.needsAppSync
         fresh.dateKey = todayDateKey()
         fresh.supplementDoses = freshSupplementDoses(for: fresh)
         fresh.poopLogsToday = []
         fresh.periodEndedTimeToday = nil
-        try? save(fresh, markNeedsSync: pendingSync)
+        fresh.needsAppSync = false
+        try? save(fresh)
     }
 
     private static func loadMutableForToday() throws -> WidgetSnapshot {
@@ -194,13 +195,12 @@ enum WidgetDataStore {
         guard var snapshot = load() else { throw WidgetStoreError.noSnapshot }
         let today = todayDateKey()
         if snapshot.dateKey != today {
-            let pendingSync = snapshot.needsAppSync
             snapshot.dateKey = today
             snapshot.supplementDoses = freshSupplementDoses(for: snapshot)
             snapshot.poopLogsToday = []
             snapshot.periodEndedTimeToday = nil
-            snapshot.needsAppSync = pendingSync
-            try save(snapshot, markNeedsSync: pendingSync)
+            snapshot.needsAppSync = false
+            try save(snapshot, markNeedsSync: false)
         }
         return snapshot
     }
@@ -212,7 +212,7 @@ enum WidgetDataStore {
         return formatter.string(from: Date())
     }
 
-    private static func freshSupplementDoses(for snapshot: WidgetSnapshot) -> [WidgetSnapshotSupplementDose] {
+    static func freshSupplementDoses(for snapshot: WidgetSnapshot) -> [WidgetSnapshotSupplementDose] {
         snapshot.supplements.flatMap { sup in
             sup.slots.map { slot in
                 WidgetSnapshotSupplementDose(

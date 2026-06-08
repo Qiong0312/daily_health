@@ -49,6 +49,7 @@ public class WidgetBridgePlugin: NSObject, FlutterPlugin {
                 result(FlutterError(code: "WRITE_FAILED", message: error.localizedDescription, details: nil))
             }
         case "readSnapshot":
+            WidgetDataStore.clearStaleSnapshotIfNeeded()
             result(WidgetDataStore.readRaw())
         default:
             result(FlutterMethodNotImplemented)

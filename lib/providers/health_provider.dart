@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -14,37 +16,118 @@ class HealthProvider extends ChangeNotifier {
   AppData _data = emptyAppData;
   var _ready = false;
 
+  bool _persistPending = false;
+  bool _persistRunning = false;
+  Future<void>? _syncInFlight;
+  Timer? _widgetExportTimer;
+
   AppData get data => _data;
   bool get ready => _ready;
 
   Future<void> init() async {
-    var data = await loadAppData();
-    data = await WidgetBridge.importIfNeeded(data);
-    _data = data;
-    await saveAppData(_data);
+    try {
+      _data = await loadAppData();
+      _data = await WidgetBridge.importIfNeeded(_data);
+      await saveAppData(_data);
+    } catch (e, st) {
+      debugPrint('HealthProvider.init failed: $e\n$st');
+      try {
+        _data = await loadAppData();
+      } catch (_) {
+        _data = emptyAppData;
+      }
+    }
     _ready = true;
     notifyListeners();
-    if (WidgetBridge.isSupported) {
-      await WidgetBridge.exportSnapshot(_data);
-      await syncFromWidget();
+    // Push today's snapshot after UI is ready; never merge stale widget days.
+    await syncFromWidget();
+  }
+
+  /// Merge widget edits, then push current app state (needed when the day rolls over).
+  Future<void> syncFromWidget() async {
+    if (!WidgetBridge.isSupported || !_ready) return;
+    if (_syncInFlight != null) {
+      await _syncInFlight;
+      return;
+    }
+    final sync = _syncFromWidgetImpl();
+    _syncInFlight = sync;
+    try {
+      await sync;
+    } finally {
+      if (identical(_syncInFlight, sync)) {
+        _syncInFlight = null;
+      }
     }
   }
 
-  /// Merge widget edits (period, Bristol, supplements) into app state.
-  Future<void> syncFromWidget() async {
-    if (!WidgetBridge.isSupported || !_ready) return;
+  Future<void> _syncFromWidgetImpl() async {
     final merged = await WidgetBridge.importIfNeeded(_data);
-    if (identical(merged, _data)) return;
+    final changed = merged != _data;
     _data = merged;
-    await saveAppData(_data);
-    await WidgetBridge.exportSnapshot(_data);
-    notifyListeners();
+    await _persistImmediately(includeWidget: true);
+    if (changed) notifyListeners();
   }
 
-  Future<void> _persist() async {
-    await saveAppData(_data);
-    await WidgetBridge.exportSnapshot(_data);
+  void _update(AppData newData) {
+    _data = newData;
     notifyListeners();
+    _schedulePersist();
+  }
+
+  void _schedulePersist() {
+    if (!_ready) return;
+    _persistPending = true;
+    if (!_persistRunning) {
+      unawaited(_drainPersistQueue());
+    }
+  }
+
+  Future<void> _drainPersistQueue() async {
+    _persistRunning = true;
+    while (_persistPending) {
+      _persistPending = false;
+      final snapshot = _data;
+      try {
+        await saveAppData(snapshot);
+      } catch (e, st) {
+        debugPrint('HealthProvider.saveAppData failed: $e\n$st');
+      }
+      _scheduleWidgetExport(snapshot);
+    }
+    _persistRunning = false;
+  }
+
+  void _scheduleWidgetExport(AppData snapshot) {
+    _widgetExportTimer?.cancel();
+    _widgetExportTimer = Timer(const Duration(milliseconds: 500), () {
+      unawaited(_exportWidgetSnapshot(snapshot));
+    });
+  }
+
+  Future<void> _exportWidgetSnapshot(AppData snapshot) async {
+    if (_data != snapshot) {
+      _scheduleWidgetExport(_data);
+      return;
+    }
+    try {
+      await WidgetBridge.exportSnapshot(snapshot);
+    } catch (e, st) {
+      debugPrint('HealthProvider.exportSnapshot failed: $e\n$st');
+    }
+  }
+
+  Future<void> _persistImmediately({required bool includeWidget}) async {
+    final snapshot = _data;
+    try {
+      await saveAppData(snapshot);
+    } catch (e, st) {
+      debugPrint('HealthProvider.saveAppData failed: $e\n$st');
+    }
+    if (includeWidget) {
+      _widgetExportTimer?.cancel();
+      await _exportWidgetSnapshot(snapshot);
+    }
   }
 
   DayEntry? getEntryForDate(String date) {
@@ -69,8 +152,7 @@ class HealthProvider extends ChangeNotifier {
         : update(DayEntry(date: date));
 
     final entries = [..._data.dayEntries.where((e) => e.date != date), updated];
-    _data = _data.copyWith(dayEntries: entries);
-    _persist();
+    _update(_data.copyWith(dayEntries: entries));
   }
 
   PeriodEvent? getOpenPeriod() {
@@ -180,8 +262,7 @@ class HealthProvider extends ChangeNotifier {
     list.add(PeriodEvent(id: _uuid.v4(), startDate: dateKey, endDate: null));
     list.sort((a, b) => a.startDate.compareTo(b.startDate));
 
-    _data = _data.copyWith(periodEvents: list);
-    _persist();
+    _update(_data.copyWith(periodEvents: list));
   }
 
   /// Clears bleeding on a specific [dateKey], adjusting or splitting spans as needed.
@@ -239,8 +320,7 @@ class HealthProvider extends ChangeNotifier {
     }
 
     updated.sort((a, b) => a.startDate.compareTo(b.startDate));
-    _data = _data.copyWith(periodEvents: updated);
-    _persist();
+    _update(_data.copyWith(periodEvents: updated));
   }
 
   /// Sets period end on [dateKey] for the most relevant span (latest start ≤ that day).
@@ -264,8 +344,7 @@ class HealthProvider extends ChangeNotifier {
 
     list.sort((a, b) => a.startDate.compareTo(b.startDate));
 
-    _data = _data.copyWith(periodEvents: list);
-    _persist();
+    _update(_data.copyWith(periodEvents: list));
   }
 
   List<PoopLog> getPoopLogsForDate(String date) {
@@ -283,15 +362,15 @@ class HealthProvider extends ChangeNotifier {
       time: '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
       shape: shape,
     );
-    _data = _data.copyWith(poopLogs: [..._data.poopLogs, log]);
-    _persist();
+    _update(_data.copyWith(poopLogs: [..._data.poopLogs, log]));
   }
 
   void removePoopLog(String id) {
-    _data = _data.copyWith(
-      poopLogs: _data.poopLogs.where((l) => l.id != id).toList(),
+    _update(
+      _data.copyWith(
+        poopLogs: _data.poopLogs.where((l) => l.id != id).toList(),
+      ),
     );
-    _persist();
   }
 
   List<Supplement> get enabledSupplements =>
@@ -315,8 +394,7 @@ class HealthProvider extends ChangeNotifier {
         ? existing.toList()
         : [...existing, SupplementLog(date: date, supplementId: supplementId, slot: slot)];
 
-    _data = _data.copyWith(supplementLogs: logs);
-    _persist();
+    _update(_data.copyWith(supplementLogs: logs));
   }
 
   void addSupplement(String name, {String? dose, List<SupplementSlot>? slots}) {
@@ -326,25 +404,27 @@ class HealthProvider extends ChangeNotifier {
       dose: dose?.trim().isEmpty == true ? null : dose?.trim(),
       slots: slots ?? [SupplementSlot.morning],
     );
-    _data = _data.copyWith(supplements: [..._data.supplements, supplement]);
-    _persist();
+    _update(_data.copyWith(supplements: [..._data.supplements, supplement]));
   }
 
   void updateSupplement(Supplement supplement) {
-    _data = _data.copyWith(
-      supplements: _data.supplements
-          .map((s) => s.id == supplement.id ? supplement : s)
-          .toList(),
+    _update(
+      _data.copyWith(
+        supplements: _data.supplements
+            .map((s) => s.id == supplement.id ? supplement : s)
+            .toList(),
+      ),
     );
-    _persist();
   }
 
   void removeSupplement(String id) {
-    _data = _data.copyWith(
-      supplements: _data.supplements.where((s) => s.id != id).toList(),
-      supplementLogs: _data.supplementLogs.where((l) => l.supplementId != id).toList(),
+    _update(
+      _data.copyWith(
+        supplements: _data.supplements.where((s) => s.id != id).toList(),
+        supplementLogs:
+            _data.supplementLogs.where((l) => l.supplementId != id).toList(),
+      ),
     );
-    _persist();
   }
 
   /// Reorder only enabled supplements as shown on the Today tab.
@@ -361,13 +441,11 @@ class HealthProvider extends ChangeNotifier {
     final enabledIds = enabled.map((s) => s.id).toSet();
     final disabled = _data.supplements.where((s) => !enabledIds.contains(s.id)).toList();
 
-    _data = _data.copyWith(supplements: [...enabled, ...disabled]);
-    _persist();
+    _update(_data.copyWith(supplements: [...enabled, ...disabled]));
   }
 
   void setAverageCycleLength(int days) {
-    _data = _data.copyWith(averageCycleLength: days.clamp(21, 45));
-    _persist();
+    _update(_data.copyWith(averageCycleLength: days.clamp(21, 45)));
   }
 
   double getSupplementAdherence({int days = 7}) {
