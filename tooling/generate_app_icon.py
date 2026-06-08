@@ -177,14 +177,13 @@ def write_android_icons(master: Image.Image, foreground: Image.Image) -> None:
     print(f"wrote Android launcher icons -> {res}")
 
 
-def write_flutter_mark(master: Image.Image) -> None:
-    """In-app blossom mark (matches home-screen icon)."""
+def write_flutter_mark(foreground: Image.Image) -> None:
+    """In-app blossom only (transparent background; icon keeps pink backdrop)."""
     assets_dir = ROOT / "assets/icons"
     assets_dir.mkdir(parents=True, exist_ok=True)
-    master.resize((256, 256), Image.Resampling.LANCZOS).save(
-        assets_dir / "bloom_mark.png", "PNG"
-    )
-    print(f"wrote Flutter mark -> {assets_dir / 'bloom_mark.png'}")
+    out = assets_dir / "bloom_mark.png"
+    foreground.resize((256, 256), Image.Resampling.LANCZOS).save(out, "PNG")
+    print(f"wrote Flutter mark -> {out}")
 
 
 def main() -> None:
@@ -195,7 +194,7 @@ def main() -> None:
     write_ios_icons(master)
     write_macos_icons(master)
     write_android_icons(master, foreground)
-    write_flutter_mark(master)
+    write_flutter_mark(foreground)
 
 
 if __name__ == "__main__":

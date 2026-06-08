@@ -15,10 +15,27 @@ let size: CGFloat = 1024
 let rose100 = NSColor(red: 252 / 255, green: 231 / 255, blue: 243 / 255, alpha: 1)
 let rose300 = NSColor(red: 249 / 255, green: 168 / 255, blue: 212 / 255, alpha: 1)
 
-let image = NSImage(size: NSSize(width: size, height: size))
-image.lockFocus()
+let rep = NSBitmapImageRep(
+    bitmapDataPlanes: nil,
+    pixelsWide: Int(size),
+    pixelsHigh: Int(size),
+    bitsPerSample: 8,
+    samplesPerPixel: 4,
+    hasAlpha: true,
+    isPlanar: false,
+    colorSpaceName: .deviceRGB,
+    bytesPerRow: 0,
+    bitsPerPixel: 0
+)!
+rep.size = NSSize(width: size, height: size)
 
-if !foregroundOnly, let ctx = NSGraphicsContext.current?.cgContext {
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+
+if foregroundOnly {
+    NSColor.clear.set()
+    NSBezierPath(rect: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+} else if let ctx = NSGraphicsContext.current?.cgContext {
     let colors = [rose100.cgColor, rose300.cgColor] as CFArray
     let space = CGColorSpaceCreateDeviceRGB()
     if let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 1]) {
@@ -49,13 +66,9 @@ let textRect = NSRect(
 )
 blossom.draw(in: textRect, withAttributes: attrs)
 
-image.unlockFocus()
+NSGraphicsContext.restoreGraphicsState()
 
-guard
-    let tiff = image.tiffRepresentation,
-    let rep = NSBitmapImageRep(data: tiff),
-    let png = rep.representation(using: .png, properties: [:])
-else {
+guard let png = rep.representation(using: .png, properties: [:]) else {
     fputs("Failed to encode PNG\n", stderr)
     exit(1)
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/health_models.dart';
 import '../theme/app_theme.dart';
 
-/// Blossom mark shared with the app icon (assets/icons/bloom_mark.png).
+/// Blossom emoji asset (transparent PNG; home-screen icon keeps its pink backdrop).
 class BloomMark extends StatelessWidget {
   const BloomMark({super.key, required this.size});
 
@@ -17,6 +17,8 @@ class BloomMark extends StatelessWidget {
       height: size,
       fit: BoxFit.contain,
       filterQuality: FilterQuality.high,
+      // Avoid any flat color behind the blossom in the header / loading UI.
+      gaplessPlayback: true,
     );
   }
 }
